@@ -1317,6 +1317,25 @@
             }, 3400)
         }
     </script>
-</body>
+<script>
+function editPatient() {
+  const name = document.getElementById("profile-name").innerText;
+
+  const newName = prompt("Edit patient name", name);
+  if (!newName) return;
+
+  document.getElementById("profile-name").innerText = newName;
+
+  localStorage.setItem("patient_name", newName);
+}
+
+// Load saved data on refresh
+window.onload = function () {
+  const savedName = localStorage.getItem("patient_name");
+  if (savedName) {
+    document.getElementById("profile-name").innerText = savedName;
+  }
+};
+</script></body>
 </html>
 ```
