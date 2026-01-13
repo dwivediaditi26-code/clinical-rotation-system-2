@@ -1,0 +1,1322 @@
+# ```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediDoc • Hospital Documentation System</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', system_ui, sans-serif;
+        }
+        
+        .logo-font {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .sidebar {
+            transition: width 0.2s ease;
+        }
+
+        .module-tab {
+            transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .module-tab:hover {
+            transform: translateX(4px);
+        }
+
+        .module-tab.active {
+            background-color: #f4f4f5;
+            border-left: 3px solid #0ea5e9;
+        }
+
+        .patient-header {
+            background: linear-gradient(90deg, #f8fafc, #f1f5f9);
+        }
+
+        .vital-grid {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 1px;
+            background: #e5e5e5;
+        }
+
+        .vital-cell {
+            background: white;
+            padding: 12px;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        .note-card {
+            transition: box-shadow 0.2s ease;
+        }
+
+        .note-card:hover {
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05);
+        }
+
+        .med-row {
+            transition: background-color 0.1s ease;
+        }
+
+        .med-row:hover {
+            background-color: #f8fafc;
+        }
+
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            
+            .print-only {
+                display: block !important;
+            }
+            
+            body {
+                background: white;
+            }
+            
+            .sidebar, .header, .fab {
+                display: none;
+            }
+            
+            .main-content {
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+                background: white;
+            }
+            
+            .patient-header {
+                background: white;
+                border-bottom: 1px solid #ddd;
+            }
+            
+            h1, h2 {
+                page-break-after: avoid;
+            }
+            
+            .note-card {
+                page-break-inside: avoid;
+                margin-bottom: 20px;
+                box-shadow: none;
+                border: 1px solid #eee;
+            }
+            
+            .vital-grid {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+            }
+            
+            table {
+                page-break-inside: avoid;
+            }
+        }
+
+        .diagnosis-badge {
+            background: #ecfdf5;
+            color: #15803d;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body class="bg-zinc-50">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div class="sidebar w-72 border-r border-zinc-200 bg-white flex flex-col no-print">
+            <div class="p-6 border-b border-zinc-100">
+                <div class="flex items-center gap-x-3">
+                    <div class="w-9 h-9 bg-sky-600 rounded-xl flex items-center justify-center">
+                        <span class="text-white text-xl font-bold logo-font">M</span>
+                    </div>
+                    <div>
+                        <div class="logo-font text-2xl font-semibold tracking-tighter text-zinc-900">MediDoc</div>
+                        <div class="text-[10px] text-zinc-500 -mt-1">HOSPITAL OS v1.3</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-3">
+                <div class="px-3 py-1 text-xs font-medium text-zinc-500 mb-2">CORE MODULES</div>
+                <div onclick="switchModule('patient')" class="module-tab active cursor-pointer flex items-center gap-x-3 px-4 py-3 rounded-xl mb-0.5" id="tab-patient">
+                    <div class="w-5 h-5 bg-emerald-100 rounded-md flex items-center justify-center text-emerald-600">👤</div>
+                    <div>
+                        <div class="font-medium text-sm">Patient Master</div>
+                        <div class="text-zinc-500 text-xs">Profile • History</div>
+                    </div>
+                </div>
+                <div onclick="switchModule('progress')" class="module-tab cursor-pointer flex items-center gap-x-3 px-4 py-3 rounded-xl mb-0.5" id="tab-progress">
+                    <div class="w-5 h-5 bg-amber-100 rounded-md flex items-center justify-center text-amber-600">📝</div>
+                    <div>
+                        <div class="font-medium text-sm">Progress Notes</div>
+                        <div class="text-zinc-500 text-xs">Daily documentation</div>
+                    </div>
+                </div>
+                <div onclick="switchModule('vitals')" class="module-tab cursor-pointer flex items-center gap-x-3 px-4 py-3 rounded-xl mb-0.5" id="tab-vitals">
+                    <div class="w-5 h-5 bg-rose-100 rounded-md flex items-center justify-center text-rose-600">❤️</div>
+                    <div>
+                        <div class="font-medium text-sm">Vital Monitoring</div>
+                        <div class="text-zinc-500 text-xs">Charts • Trends</div>
+                    </div>
+                </div>
+                <div onclick="switchModule('meds')" class="module-tab cursor-pointer flex items-center gap-x-3 px-4 py-3 rounded-xl mb-0.5" id="tab-meds">
+                    <div class="w-5 h-5 bg-indigo-100 rounded-md flex items-center justify-center text-indigo-600">💊</div>
+                    <div>
+                        <div class="font-medium text-sm">Medication Orders</div>
+                        <div class="text-zinc-500 text-xs">MAR • Prescriptions</div>
+                    </div>
+                </div>
+                <div onclick="switchModule('iv')" class="module-tab cursor-pointer flex items-center gap-x-3 px-4 py-3 rounded-xl mb-0.5" id="tab-iv">
+                    <div class="w-5 h-5 bg-cyan-100 rounded-md flex items-center justify-center text-cyan-600">💧</div>
+                    <div>
+                        <div class="font-medium text-sm">IV Fluids</div>
+                        <div class="text-zinc-500 text-xs">Infusions • Rates</div>
+                    </div>
+                </div>
+                <div onclick="switchModule('investigations')" class="module-tab cursor-pointer flex items-center gap-x-3 px-4 py-3 rounded-xl mb-0.5" id="tab-investigations">
+                    <div class="w-5 h-5 bg-violet-100 rounded-md flex items-center justify-center text-violet-600">🧪</div>
+                    <div>
+                        <div class="font-medium text-sm">Investigations</div>
+                        <div class="text-zinc-500 text-xs">Labs • Imaging</div>
+                    </div>
+                </div>
+                <div onclick="switchModule('handover')" class="module-tab cursor-pointer flex items-center gap-x-3 px-4 py-3 rounded-xl" id="tab-handover">
+                    <div class="w-5 h-5 bg-lime-100 rounded-md flex items-center justify-center text-lime-600">🔄</div>
+                    <div>
+                        <div class="font-medium text-sm">Duty Handover</div>
+                        <div class="text-zinc-500 text-xs">Shift summaries</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-auto border-t border-zinc-100 p-4">
+                <div class="bg-zinc-50 rounded-2xl p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="text-xs font-medium text-zinc-500">ACTIVE PATIENT</div>
+                        <div class="px-2 py-0.5 bg-white rounded text-[10px] font-mono text-emerald-600 border">IPD-4821</div>
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <div class="w-11 h-11 bg-zinc-200 rounded-full flex-none"></div>
+                        <div>
+                            <div class="font-semibold" id="active-patient-name">Anita Sharma</div>
+                            <div class="text-xs text-zinc-500">42y • Female • Bed 214</div>
+                            <div class="flex gap-1 mt-1">
+                                <div class="diagnosis-badge">Pneumonia</div>
+                                <div class="diagnosis-badge">Hypertension</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-x-2 mt-6 text-xs text-zinc-400">
+                    <div>Next.js + Tailwind</div>
+                    <div class="w-px h-3 bg-zinc-200"></div>
+                    <div>Print Optimized</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col">
+            <!-- Top Header -->
+            <div class="h-16 border-b border-zinc-100 bg-white flex items-center px-6 justify-between no-print">
+                <div class="flex items-center gap-x-4">
+                    <button onclick="toggleSidebar()" class="lg:hidden w-9 h-9 flex items-center justify-center hover:bg-zinc-100 rounded-xl">
+                        <span class="text-xl">☰</span>
+                    </button>
+                    <div class="flex items-center gap-x-2">
+                        <div class="text-sm font-medium text-zinc-800">Ward 3B • General Medicine</div>
+                        <div class="text-xs px-1.5 py-px bg-amber-100 text-amber-600 rounded">DAY SHIFT</div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-x-6">
+                    <div class="flex items-center gap-x-1.5 text-xs">
+                        <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                        <span class="text-emerald-600 font-medium">SYSTEM ONLINE</span>
+                    </div>
+
+                    <div class="flex gap-x-4 text-sm">
+                        <div class="flex items-center gap-x-1 cursor-pointer hover:text-zinc-700" onclick="showRoleModal()">
+                            <div>👨‍⚕️</div>
+                            <div>Dr. Raj Patel</div>
+                        </div>
+                        <div onclick="window.print()" class="flex items-center gap-x-1 cursor-pointer hover:text-zinc-700">
+                            🖨️ Print
+                        </div>
+                    </div>
+
+                    <div class="w-8 h-8 bg-zinc-100 rounded-2xl flex items-center justify-center relative cursor-pointer">
+                        🔔
+                        <div class="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-rose-500 rounded-full flex items-center justify-center">
+                            <span class="text-[9px] text-white font-medium">3</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Patient Bar -->
+            <div class="patient-header h-14 border-b border-zinc-200 flex items-center px-6 gap-6 no-print">
+                <div>
+                    <div class="uppercase text-[10px] font-mono tracking-widest text-zinc-500 mb-px">CURRENT PATIENT</div>
+                    <div class="flex items-center gap-x-3">
+                        <select id="patient-select" onchange="changePatient()" class="bg-transparent font-semibold text-lg focus:outline-none cursor-pointer">
+                            <option value="1">Anita Sharma • 42F • IPD-4821</option>
+                            <option value="2">Rajesh Kumar • 58M • IPD-3194</option>
+                            <option value="3">Priya Singh • 29F • OPD-7742</option>
+                            <option value="4">Mohammed Ali • 67M • IPD-1289</option>
+                        </select>
+                        <div class="flex items-center gap-x-2 text-xs text-zinc-500">
+                            <div>Ward B-214</div>
+                            <div>•</div>
+                            <div>Admitted 3 days ago</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ml-auto flex gap-6 text-xs">
+                    <div>
+                        <div class="text-zinc-500">UHID</div>
+                        <div class="font-mono">KOL-9382910</div>
+                    </div>
+                    <div>
+                        <div class="text-zinc-500">Provisional Dx</div>
+                        <div class="font-medium">Community Acquired Pneumonia</div>
+                    </div>
+                    <div>
+                        <div class="text-zinc-500">Final Dx</div>
+                        <div class="font-medium text-emerald-700">Awaiting cultures</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="flex-1 overflow-auto p-6" id="main-content">
+                <!-- PATIENT MASTER -->
+                <div id="content-patient" class="module-content">
+                    <div class="max-w-3xl mx-auto">
+                        <div class="flex justify-between items-end mb-8">
+                            <div>
+                                <div class="uppercase text-xs tracking-widest font-mono text-zinc-500">MASTER DATA</div>
+                                <div class="text-3xl font-semibold logo-font tracking-tighter">Patient Profile</div>
+                            </div>
+                            <div onclick="editPatient()" class="flex items-center gap-x-2 bg-white text-xs px-4 h-9 rounded-2xl border cursor-pointer hover:border-zinc-300">
+                                ✏️ EDIT PROFILE
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-12 gap-6">
+                            <div class="col-span-8">
+                                <div class="bg-white rounded-3xl p-8">
+                                    <div class="flex gap-8">
+                                        <div class="flex-none">
+                                            <div class="w-24 h-24 bg-zinc-100 rounded-2xl relative">
+                                                <div class="absolute bottom-2 right-2 bg-white rounded-full p-1 shadow">
+                                                    👩🏻
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="flex items-baseline gap-3">
+                                                <div class="text-4xl font-semibold" id="profile-name">Anita Sharma</div>
+                                                <div class="text-zinc-400 text-xl">42y</div>
+                                            </div>
+                                            <div class="flex gap-4 text-sm mt-1">
+                                                <div>Female</div>
+                                                <div>Indian</div>
+                                                <div>Married</div>
+                                            </div>
+
+                                            <div class="grid grid-cols-3 gap-6 mt-8">
+                                                <div>
+                                                    <div class="text-xs text-zinc-500">UHID</div>
+                                                    <div class="font-mono mt-0.5">KOL-9382910</div>
+                                                </div>
+                                                <div>
+                                                    <div class="text-xs text-zinc-500">IPD Number</div>
+                                                    <div class="font-mono mt-0.5">4821</div>
+                                                </div>
+                                                <div>
+                                                    <div class="text-xs text-zinc-500">Ward / Bed</div>
+                                                    <div class="font-medium mt-0.5">3B • 214</div>
+                                                </div>
+                                            </div>
+
+                                            <div class="mt-8">
+                                                <div class="text-xs text-zinc-500 mb-2">CONTACT INFORMATION</div>
+                                                <div class="flex gap-6">
+                                                    <div>
+                                                        <div class="text-zinc-400 text-xs">PRIMARY</div>
+                                                        <div>+91 98312 44567</div>
+                                                    </div>
+                                                    <div>
+                                                        <div class="text-zinc-400 text-xs">EMAIL</div>
+                                                        <div>anita.sharma92@gmail.com</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-span-4">
+                                <div class="bg-white rounded-3xl p-6 h-full">
+                                    <div class="text-xs uppercase font-mono tracking-widest text-zinc-500 mb-3">DIAGNOSES</div>
+                                    
+                                    <div class="space-y-4">
+                                        <div>
+                                            <div class="flex items-center gap-2">
+                                                <div class="diagnosis-badge">PRIMARY</div>
+                                                <div class="text-sm font-medium">Community Acquired Pneumonia</div>
+                                            </div>
+                                            <div class="text-xs text-zinc-500 mt-1">ICD: J12.9 • Onset: 4 days ago</div>
+                                        </div>
+                                        
+                                        <div>
+                                            <div class="flex items-center gap-2">
+                                                <div class="diagnosis-badge">COMORBID</div>
+                                                <div class="text-sm font-medium">Hypertension</div>
+                                            </div>
+                                            <div class="text-xs text-zinc-500 mt-1">ICD: I10 • Onset: 3 years ago</div>
+                                        </div>
+                                        
+                                        <div>
+                                            <div class="flex items-center gap-2">
+                                                <div class="diagnosis-badge">COMORBID</div>
+                                                <div class="text-sm font-medium">Type 2 Diabetes</div>
+                                            </div>
+                                            <div class="text-xs text-zinc-500 mt-1">ICD: E11 • Onset: 18 months ago</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-6 pt-6 border-t">
+                                        <div class="text-xs text-zinc-500 mb-1">ALLERGIES</div>
+                                        <div class="flex flex-wrap gap-2">
+                                            <div class="bg-rose-50 text-rose-700 px-3 py-1 rounded-full text-xs">Penicillin</div>
+                                            <div class="bg-rose-50 text-rose-700 px-3 py-1 rounded-full text-xs">Shellfish</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 bg-white rounded-3xl p-8">
+                            <div class="flex justify-between items-center mb-4">
+                                <div class="uppercase text-xs tracking-widest font-mono text-zinc-500">PAST MEDICAL HISTORY</div>
+                                <div class="text-sky-600 text-xs font-medium cursor-pointer">ADD ENTRY +</div>
+                            </div>
+                            
+                            <div class="space-y-3">
+                                <div class="flex gap-4 bg-zinc-50 rounded-2xl p-4">
+                                    <div class="w-12 h-12 flex-none bg-white rounded-xl flex items-center justify-center text-2xl">🦴</div>
+                                    <div class="flex-1">
+                                        <div>Fractured tibia (RTA 2018)</div>
+                                        <div class="text-xs text-zinc-500">Healed with internal fixation</div>
+                                    </div>
+                                    <div class="text-right text-xs text-zinc-400">2018</div>
+                                </div>
+                                
+                                <div class="flex gap-4 bg-zinc-50 rounded-2xl p-4">
+                                    <div class="w-12 h-12 flex-none bg-white rounded-xl flex items-center justify-center text-2xl">🩸</div>
+                                    <div class="flex-1">
+                                        <div>Postpartum hemorrhage</div>
+                                        <div class="text-xs text-zinc-500">Managed conservatively</div>
+                                    </div>
+                                    <div class="text-right text-xs text-zinc-400">2019</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PROGRESS NOTES -->
+                <div id="content-progress" class="module-content hidden">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <div class="uppercase font-mono text-xs tracking-[0.1em] text-zinc-500">DOCUMENT ENGINE</div>
+                            <div class="text-[28px] leading-none font-semibold logo-font">Daily Progress Notes</div>
+                        </div>
+                        <div onclick="addNewNote()" class="bg-sky-600 text-white flex items-center gap-x-2 px-5 h-10 rounded-2xl text-sm font-medium cursor-pointer hover:bg-sky-700 active:scale-[0.985]">
+                            <span>NEW NOTE</span>
+                            <span class="text-lg leading-none">+</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-12 gap-6">
+                        <div class="col-span-4">
+                            <div class="sticky top-6">
+                                <div class="bg-white rounded-3xl p-6 mb-6">
+                                    <div class="text-xs font-medium text-zinc-500 mb-4">TODAY'S NOTE</div>
+                                    
+                                    <div class="space-y-5">
+                                        <div>
+                                            <div class="text-[11px] text-zinc-500">SUBJECTIVE</div>
+                                            <div class="text-sm mt-1 leading-snug">Patient reports improved cough. Shortness of breath on minimal exertion.</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-[11px] text-zinc-500">OBJECTIVE</div>
+                                            <div class="flex gap-4 mt-1">
+                                                <div>BP 128/76</div>
+                                                <div>HR 82</div>
+                                                <div>Temp 98.4°F</div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="text-[11px] text-zinc-500">ASSESSMENT</div>
+                                            <div class="text-sm mt-1">Improving. Continue current antibiotics.</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div onclick="duplicateLastNote()" class="border border-dashed border-zinc-300 rounded-3xl p-5 cursor-pointer hover:bg-zinc-50 group">
+                                    <div class="flex items-center gap-x-3">
+                                        <div class="w-9 h-9 bg-zinc-100 rounded-2xl flex items-center justify-center text-xl group-hover:rotate-12 transition-transform">📋</div>
+                                        <div>
+                                            <div class="font-medium">Duplicate Yesterday</div>
+                                            <div class="text-xs text-zinc-500">Pull from previous entry</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-span-8">
+                            <div id="notes-list" class="space-y-6">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VITALS -->
+                <div id="content-vitals" class="module-content hidden">
+                    <div class="flex justify-between mb-8">
+                        <div>
+                            <div class="uppercase font-mono text-xs tracking-widest text-zinc-400">MONITORING ENGINE</div>
+                            <div class="logo-font text-3xl font-semibold tracking-tighter">Vital Signs</div>
+                            <div class="text-zinc-500">Last updated 14 mins ago</div>
+                        </div>
+                        <div class="flex gap-3">
+                            <div class="px-4 py-2 bg-white rounded-2xl border flex items-center gap-2 text-sm cursor-pointer hover:bg-zinc-50">
+                                4 HRLY
+                                <div class="text-xs bg-zinc-100 px-1.5 py-px rounded">WARD</div>
+                            </div>
+                            <div onclick="addVitalEntry()" class="bg-emerald-600 text-white px-6 rounded-2xl flex items-center gap-x-2 cursor-pointer">
+                                RECORD NOW
+                                <span class="opacity-70">+</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-3xl p-8">
+                        <div class="vital-grid mb-8" id="vitals-grid">
+                            <!-- Populated by JS -->
+                        </div>
+
+                        <div class="flex justify-end">
+                            <div class="text-xs text-zinc-500 flex items-center gap-1 cursor-pointer">
+                                VIEW FULL 24HR CHART 
+                                <span class="text-base">→</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 grid grid-cols-2 gap-6">
+                        <div class="bg-white rounded-3xl p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="text-sm font-medium">SpO₂ Trend</div>
+                                <div class="text-emerald-600 text-xs">94% AVG</div>
+                            </div>
+                            <div class="h-28 bg-zinc-50 rounded-2xl relative">
+                                <div class="absolute bottom-4 left-4 right-4 h-px bg-emerald-400"></div>
+                                <div class="absolute bottom-8 left-8 w-2 h-2 bg-emerald-600 rounded-full"></div>
+                                <div class="absolute bottom-6 left-14 w-2 h-2 bg-emerald-600 rounded-full"></div>
+                                <div class="absolute bottom-11 left-24 w-2 h-2 bg-emerald-600 rounded-full"></div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-3xl p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="text-sm font-medium">Temperature Curve</div>
+                                <div class="text-rose-600 text-xs">99.1° AVG</div>
+                            </div>
+                            <div class="h-28 bg-zinc-50 rounded-2xl relative overflow-hidden">
+                                <div class="absolute inset-x-4 bottom-6 h-px bg-rose-300"></div>
+                                <div class="absolute left-8 bottom-7 w-3 h-3 bg-rose-600 rounded-full -rotate-45"></div>
+                                <div class="absolute left-16 bottom-12 w-3 h-3 bg-rose-600 rounded-full rotate-12"></div>
+                                <div class="absolute right-12 bottom-9 w-3 h-3 bg-rose-600 rounded-full"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MED ORDERS -->
+                <div id="content-meds" class="module-content hidden">
+                    <div class="mb-8 flex items-center justify-between">
+                        <div>
+                            <div class="font-mono uppercase text-xs tracking-widest text-zinc-500">TREATMENT ENGINE</div>
+                            <div class="text-3xl logo-font font-semibold tracking-tight">Medication Orders</div>
+                        </div>
+                        <div onclick="showAddMedModal()" class="flex items-center gap-2 bg-white px-4 h-9 rounded-2xl border text-sm cursor-pointer hover:bg-zinc-50">
+                            ADD MEDICATION
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-3xl overflow-hidden">
+                        <table class="w-full" id="meds-table">
+                            <thead>
+                                <tr class="border-b border-zinc-100">
+                                    <th class="text-left py-4 px-6 font-normal text-xs text-zinc-500 w-5"></th>
+                                    <th class="text-left py-4 px-6 font-normal text-xs text-zinc-500">DRUG</th>
+                                    <th class="text-left py-4 px-6 font-normal text-xs text-zinc-500">DOSE</th>
+                                    <th class="text-left py-4 px-6 font-normal text-xs text-zinc-500">ROUTE</th>
+                                    <th class="text-left py-4 px-6 font-normal text-xs text-zinc-500">FREQUENCY</th>
+                                    <th class="text-left py-4 px-6 font-normal text-xs text-zinc-500">START</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="meds-tbody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="flex gap-3 mt-6">
+                        <div class="flex-1 bg-white rounded-3xl p-6">
+                            <div class="uppercase text-zinc-500 text-xs font-medium tracking-wider mb-3">ORAL / IM / SC</div>
+                            <div class="space-y-3">
+                                <div class="flex justify-between text-sm">
+                                    <div>Tab. Paracetamol 500mg</div>
+                                    <div class="text-zinc-400">BD</div>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <div>Inj. Ceftriaxone 1g</div>
+                                    <div class="text-zinc-400">12 hourly</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex-1 bg-white rounded-3xl p-6">
+                            <div class="uppercase text-zinc-500 text-xs font-medium tracking-wider mb-3">IV MEDICATIONS</div>
+                            <div class="space-y-3">
+                                <div class="flex justify-between text-sm">
+                                    <div>Inj. Pantoprazole 40mg</div>
+                                    <div class="text-zinc-400">OD</div>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <div>Inj. Ondansetron 4mg</div>
+                                    <div class="text-zinc-400">SOS</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- IV FLUIDS -->
+                <div id="content-iv" class="module-content hidden">
+                    <div class="max-w-md mx-auto">
+                        <div class="mb-10">
+                            <div class="uppercase font-mono tracking-widest text-xs text-zinc-500">FLUID MANAGEMENT</div>
+                            <div class="logo-font text-[42px] leading-none font-bold tracking-[-0.04em]">IV Fluids</div>
+                        </div>
+
+                        <div class="bg-white rounded-3xl p-9">
+                            <div class="flex justify-between mb-8">
+                                <div>
+                                    <div class="text-xs text-zinc-500">CURRENT RATE</div>
+                                    <div class="text-6xl font-semibold tabular-nums tracking-tighter text-zinc-900 -mt-2">125</div>
+                                    <div class="text-xs -mt-1">ml/hr</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-emerald-600 font-medium">RL</div>
+                                    <div class="text-xs text-zinc-500">Running since 4hr 20min</div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-6">
+                                <div>
+                                    <div class="flex items-center justify-between text-xs mb-2">
+                                        <div>FLUID NAME</div>
+                                        <div class="text-emerald-600">Ringer Lactate</div>
+                                    </div>
+                                    <div class="h-1 bg-zinc-100 rounded-full">
+                                        <div class="bg-emerald-500 w-[72%] h-1 rounded-full"></div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div class="flex items-center justify-between text-xs mb-2">
+                                        <div>INDICATION</div>
+                                        <div>Maintenance + Electrolyte correction</div>
+                                    </div>
+                                    <input type="range" min="50" max="200" value="125" class="w-full accent-emerald-600">
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="border rounded-2xl p-4">
+                                        <div class="text-[10px] text-zinc-500">VOLUME LEFT</div>
+                                        <div class="text-2xl font-semibold">840 ml</div>
+                                    </div>
+                                    <div class="border rounded-2xl p-4">
+                                        <div class="text-[10px] text-zinc-500">EST FINISH</div>
+                                        <div class="text-2xl font-semibold">6hr 45min</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 flex gap-2">
+                            <div class="flex-1 bg-white rounded-3xl px-5 py-4 cursor-pointer hover:bg-zinc-50">
+                                <div class="text-emerald-600 text-sm">DNS 5%</div>
+                                <div class="text-[10px] text-zinc-500">Alternate if K+ low</div>
+                            </div>
+                            <div class="flex-1 bg-white rounded-3xl px-5 py-4 cursor-pointer hover:bg-zinc-50">
+                                <div class="text-amber-600 text-sm">NS 0.9%</div>
+                                <div class="text-[10px] text-zinc-500">If hypotensive</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- INVESTIGATIONS -->
+                <div id="content-investigations" class="module-content hidden">
+                    <div>
+                        <div class="flex items-center gap-4 mb-8">
+                            <div>
+                                <div class="font-mono uppercase tracking-widest text-xs text-zinc-400">REQUEST ENGINE</div>
+                                <div class="text-[27px] logo-font font-semibold">Investigation Tracker</div>
+                            </div>
+                            <div class="-mt-3 bg-amber-100 text-amber-600 text-xs px-3 py-1 rounded-full font-medium">3 PENDING</div>
+                        </div>
+
+                        <div class="bg-white rounded-3xl">
+                            <div class="p-8 border-b flex items-center justify-between">
+                                <div class="flex items-center gap-6">
+                                    <div>
+                                        <div class="text-zinc-400 text-xs">ORDERED</div>
+                                        <div class="font-semibold">Chest X-Ray PA View</div>
+                                    </div>
+                                    <div class="h-7 w-px bg-zinc-100"></div>
+                                    <div>
+                                        <div class="text-emerald-500 font-medium">SAMPLE SENT ✓</div>
+                                        <div class="text-[10px] text-zinc-500">2 hours ago</div>
+                                    </div>
+                                </div>
+                                <div class="text-xs bg-emerald-100 text-emerald-700 px-4 py-1 rounded-full">REPORT EXPECTED IN 4HRS</div>
+                            </div>
+
+                            <div class="p-8 border-b flex items-center justify-between">
+                                <div class="flex items-center gap-6">
+                                    <div>
+                                        <div class="text-zinc-400 text-xs">ORDERED</div>
+                                        <div class="font-semibold">Blood Culture (Aerobic)</div>
+                                    </div>
+                                    <div class="h-7 w-px bg-zinc-100"></div>
+                                    <div>
+                                        <div class="text-rose-500 font-medium">PENDING</div>
+                                        <div class="text-[10px] text-zinc-500">Ordered 41 mins ago</div>
+                                    </div>
+                                </div>
+                                <div onclick="markReceived()" class="px-5 py-2 text-xs border border-dashed border-zinc-300 rounded-2xl cursor-pointer hover:bg-zinc-50">MARK AS RECEIVED</div>
+                            </div>
+
+                            <div class="p-8 flex items-center justify-between">
+                                <div class="flex items-center gap-6">
+                                    <div>
+                                        <div class="text-zinc-400 text-xs">ORDERED</div>
+                                        <div class="font-semibold">HbA1c</div>
+                                    </div>
+                                    <div class="h-7 w-px bg-zinc-100"></div>
+                                    <div>
+                                        <div class="text-emerald-500 font-medium">RECEIVED ✓</div>
+                                        <div class="text-[10px] text-zinc-500">Yesterday 11:22am</div>
+                                    </div>
+                                </div>
+                                <div class="text-xs px-3 py-1 bg-zinc-100 rounded">7.9%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- HANDOVER -->
+                <div id="content-handover" class="module-content hidden">
+                    <div class="max-w-lg mx-auto">
+                        <div class="mb-8">
+                            <div>🔄</div>
+                            <div class="logo-font text-4xl font-bold tracking-tighter">Duty Handover</div>
+                            <div class="text-zinc-500">For next shift • 19:00 - 07:00</div>
+                        </div>
+
+                        <div class="bg-white rounded-3xl p-8 space-y-9">
+                            <div>
+                                <div class="uppercase text-[10px] font-medium text-zinc-500 mb-2">PATIENT SUMMARY</div>
+                                <div class="text-sm">42y female, admitted with fever and cough. Improving on IV antibiotics. Day 3.</div>
+                            </div>
+
+                            <div>
+                                <div class="uppercase text-[10px] font-medium text-zinc-500 mb-2">ACTIVE PROBLEMS</div>
+                                <div class="pl-4 space-y-2 text-sm">
+                                    <div class="flex gap-2">
+                                        <div class="text-emerald-500">•</div>
+                                        <div>Pneumonia - improving</div>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <div class="text-emerald-500">•</div>
+                                        <div>Hypertension - controlled</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="uppercase text-[10px] font-medium text-zinc-500 mb-2">PENDING TASKS</div>
+                                <div class="pl-4 space-y-1 text-sm">
+                                    <div>Repeat CRP at 20:00</div>
+                                    <div>Check post antibiotic levels</div>
+                                    <div>Physiotherapy session</div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="uppercase text-[10px] font-medium text-zinc-500 mb-2">RED FLAGS</div>
+                                <div class="bg-rose-50 border border-rose-100 rounded-2xl p-4 text-sm">
+                                    Watch for worsening respiratory distress. Temp &gt;101°F to inform immediately.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 flex gap-2 justify-end">
+                            <div class="px-6 py-3 text-xs border rounded-2xl">SAVE DRAFT</div>
+                            <div class="bg-zinc-900 text-white px-6 py-3 text-xs rounded-2xl">COMPLETE HANDOVER</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Bar -->
+            <div class="h-11 border-t border-zinc-100 bg-white flex items-center px-6 text-xs text-zinc-400 no-print">
+                <div>MVP: Patient + Notes + Vitals + Meds + Investigations</div>
+                <div class="mx-auto">v1.3 • Built for print • Role: Resident Doctor</div>
+                <div>Next print in 2h 14m</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Note Modal -->
+    <div id="add-note-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50 no-print">
+        <div class="bg-white rounded-3xl w-full max-w-lg mx-4">
+            <div class="p-8">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <div class="font-medium">New Progress Note</div>
+                        <div class="text-xs text-zinc-500">October 17, 2023 • 14:22</div>
+                    </div>
+                    <div onclick="closeAddNoteModal()" class="w-8 h-8 flex items-center justify-center cursor-pointer hover:bg-zinc-100 rounded-full">✕</div>
+                </div>
+
+                <div class="space-y-6">
+                    <div>
+                        <div class="text-xs text-zinc-500 mb-1.5">SUBJECTIVE</div>
+                        <textarea class="w-full h-20 border rounded-2xl p-3 text-sm focus:outline-hidden focus:border-sky-400" placeholder="Patient complaints, history..."></textarea>
+                    </div>
+                    <div>
+                        <div class="text-xs text-zinc-500 mb-1.5">OBJECTIVE</div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <div class="text-[10px]">BP</div>
+                                <input type="text" class="border rounded-xl px-3 py-2 w-full text-sm" value="124/78" />
+                            </div>
+                            <div>
+                                <div class="text-[10px]">HR</div>
+                                <input type="text" class="border rounded-xl px-3 py-2 w-full text-sm" value="88" />
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-zinc-500 mb-1.5">ASSESSMENT + PLAN</div>
+                        <textarea class="w-full h-20 border rounded-2xl p-3 text-sm focus:outline-hidden focus:border-sky-400" placeholder="Diagnosis update, next steps..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t flex">
+                <div onclick="closeAddNoteModal()" class="flex-1 py-4 text-center text-sm font-medium border-r cursor-pointer hover:bg-zinc-50">CANCEL</div>
+                <div onclick="saveNewNote()" class="flex-1 py-4 text-center text-sm font-medium text-sky-600 cursor-pointer hover:bg-zinc-50">SAVE NOTE</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Medication Modal -->
+    <div id="add-med-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50 no-print">
+        <div class="bg-white w-full max-w-md rounded-3xl">
+            <div class="px-8 pt-8 pb-6">
+                <div class="text-lg font-medium mb-6">Add New Medication Order</div>
+                
+                <div class="space-y-5">
+                    <div>
+                        <label class="block text-xs font-medium text-zinc-500 mb-1.5">DRUG NAME</label>
+                        <input id="new-med-name" type="text" class="w-full border-0 bg-zinc-100 rounded-2xl py-3 px-4 focus:outline-hidden" placeholder="Amoxicillin" />
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-zinc-500 mb-1.5">DOSE</label>
+                            <input id="new-med-dose" type="text" class="w-full border-0 bg-zinc-100 rounded-2xl py-3 px-4 focus:outline-hidden" placeholder="500 mg" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-zinc-500 mb-1.5">ROUTE</label>
+                            <select id="new-med-route" class="w-full border-0 bg-zinc-100 rounded-2xl py-3 px-4 focus:outline-hidden">
+                                <option>PO</option>
+                                <option>IV</option>
+                                <option>IM</option>
+                                <option>SC</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-zinc-500 mb-1.5">FREQUENCY</label>
+                        <div class="flex gap-2">
+                            <div class="flex-1 bg-zinc-100 rounded-2xl py-3 px-4 text-sm cursor-pointer">BD</div>
+                            <div class="flex-1 bg-zinc-100 rounded-2xl py-3 px-4 text-sm cursor-pointer">TDS</div>
+                            <div class="flex-1 bg-zinc-100 rounded-2xl py-3 px-4 text-sm cursor-pointer">QID</div>
+                            <div class="flex-1 bg-zinc-100 rounded-2xl py-3 px-4 text-sm cursor-pointer">STAT</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="-mt-2 border-t flex">
+                <button onclick="closeAddMedModal()" class="flex-1 py-5 text-sm font-medium hover:bg-zinc-50">CANCEL</button>
+                <button onclick="addMedication()" class="flex-1 py-5 text-sm font-medium text-emerald-600 hover:bg-zinc-50">ADD TO ORDERS</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FAB -->
+    <div onclick="handleFabClick()" id="fab" class="fixed bottom-8 right-8 w-14 h-14 bg-sky-600 rounded-3xl flex items-center justify-center text-white text-3xl shadow-xl cursor-pointer active:scale-95 transition-all no-print">
+        +
+    </div>
+
+    <script>
+        let currentModule = 'patient'
+        let notes = [
+            {
+                id: 1,
+                date: 'Oct 16',
+                time: '09:14',
+                subjective: 'Cough reduced. Taking oral fluids well.',
+                objective: 'BP 122/74, HR 76, Temp 98.1, SpO2 96%',
+                assessment: 'Improving. Culture reports pending.'
+            },
+            {
+                id: 2,
+                date: 'Oct 15',
+                time: '20:40',
+                subjective: 'Fever spikes in evening. Dyspnea on walking.',
+                objective: 'BP 136/82, HR 94, Temp 100.2, SpO2 93%',
+                assessment: 'Antibiotics escalated to Ceftriaxone.'
+            }
+        ]
+
+        let vitals = [
+            { time: '06:00', bp: '118/72', hr: '68', rr: '18', spo2: '97', temp: '98.2' },
+            { time: '10:00', bp: '124/78', hr: '82', rr: '20', spo2: '95', temp: '99.1' },
+            { time: '14:00', bp: '122/74', hr: '76', rr: '16', spo2: '96', temp: '98.4' }
+        ]
+
+        let medications = [
+            {
+                id: 1,
+                name: 'Ceftriaxone',
+                dose: '1 g',
+                route: 'IV',
+                frequency: '12 hourly',
+                start: 'Oct 14'
+            },
+            {
+                id: 2,
+                name: 'Paracetamol',
+                dose: '650 mg',
+                route: 'PO',
+                frequency: 'SOS',
+                start: 'Oct 15'
+            },
+            {
+                id: 3,
+                name: 'Atorvastatin',
+                dose: '20 mg',
+                route: 'PO',
+                frequency: 'HS',
+                start: 'Ongoing'
+            }
+        ]
+
+        function switchModule(module) {
+            // Update tabs
+            document.querySelectorAll('.module-tab').forEach(tab => tab.classList.remove('active'))
+            
+            const tabId = `tab-${module}`
+            const tabEl = document.getElementById(tabId)
+            if (tabEl) tabEl.classList.add('active')
+
+            // Hide all contents
+            document.querySelectorAll('.module-content').forEach(content => content.classList.add('hidden'))
+            
+            // Show selected
+            const contentId = `content-${module}`
+            const contentEl = document.getElementById(contentId)
+            if (contentEl) contentEl.classList.remove('hidden')
+
+            currentModule = module
+
+            // Refresh dynamic content
+            if (module === 'progress') renderNotes()
+            if (module === 'vitals') renderVitals()
+            if (module === 'meds') renderMeds()
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar')
+            if (sidebar.style.width === '0px') {
+                sidebar.style.width = '288px'
+            } else {
+                sidebar.style.width = '0px'
+            }
+        }
+
+        function changePatient() {
+            const select = document.getElementById('patient-select')
+            const nameEl = document.getElementById('active-patient-name')
+            const profileName = document.getElementById('profile-name')
+            
+            if (!select) return
+            
+            const val = select.value
+            
+            let name = 'Anita Sharma'
+            if (val === '2') name = 'Rajesh Kumar'
+            if (val === '3') name = 'Priya Singh'
+            if (val === '4') name = 'Mohammed Ali'
+            
+            if (nameEl) nameEl.textContent = name
+            if (profileName) profileName.textContent = name
+        }
+
+        function renderNotes() {
+            const container = document.getElementById('notes-list')
+            if (!container) return
+            
+            container.innerHTML = ''
+            
+            notes.forEach(note => {
+                const div = document.createElement('div')
+                div.className = 'note-card bg-white rounded-3xl p-7 group'
+                
+                div.innerHTML = `
+                    <div class="flex gap-4">
+                        <div>
+                            <div class="font-mono text-xs text-zinc-400">${note.date}</div>
+                            <div class="font-semibold text-xl mt-0.5">${note.time}</div>
+                        </div>
+                        
+                        <div class="-mt-1 flex-1">
+                            <div>
+                                <div class="uppercase text-[10px] font-medium tracking-widest text-zinc-500">SUBJECTIVE</div>
+                                <div class="mt-1 text-[15px]">${note.subjective}</div>
+                            </div>
+                            
+                            <div class="mt-5">
+                                <div class="uppercase text-[10px] font-medium tracking-widest text-zinc-500">OBJECTIVE</div>
+                                <div class="mt-1 text-[15px]">${note.objective}</div>
+                            </div>
+                            
+                            <div class="mt-5">
+                                <div class="uppercase text-[10px] font-medium tracking-widest text-zinc-500">ASSESSMENT</div>
+                                <div class="mt-1 text-[15px]">${note.assessment}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="w-9 h-9 bg-zinc-100 rounded-2xl flex items-center justify-center text-xl self-start mt-1 group-hover:bg-sky-100 transition-colors">📄</div>
+                    </div>
+                    
+                    <div class="border-t border-dotted mt-7 pt-4 flex gap-3">
+                        <div class="text-xs bg-zinc-50 px-3 py-1 rounded-full">DUPLICATE</div>
+                        <div class="text-xs bg-zinc-50 px-3 py-1 rounded-full">PRINT</div>
+                    </div>
+                `
+                
+                container.appendChild(div)
+            })
+            
+            // Add empty state if none
+            if (notes.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white border border-dashed border-zinc-200 rounded-3xl p-16 flex flex-col items-center justify-center">
+                        <div class="text-5xl mb-4 opacity-40">📝</div>
+                        <div class="text-zinc-400">No notes yet</div>
+                        <div onclick="addNewNote()" class="mt-6 text-sky-600 text-sm font-medium cursor-pointer">CREATE FIRST NOTE</div>
+                    </div>
+                `
+            }
+        }
+
+        function addNewNote() {
+            document.getElementById('add-note-modal').classList.remove('hidden')
+            document.getElementById('add-note-modal').classList.add('flex')
+        }
+
+        function closeAddNoteModal() {
+            document.getElementById('add-note-modal').classList.add('hidden')
+            document.getElementById('add-note-modal').classList.remove('flex')
+        }
+
+        function saveNewNote() {
+            // Simulate adding
+            const newNote = {
+                id: notes.length + 1,
+                date: 'Oct 17',
+                time: '14:22',
+                subjective: 'Improved overnight. Eating normally.',
+                objective: 'BP 118/68, HR 64, Temp 97.8, SpO2 98%',
+                assessment: 'Ready for step down. Consider discharge.'
+            }
+            
+            notes.unshift(newNote)
+            renderNotes()
+            closeAddNoteModal()
+            
+            // Fake toast
+            showToast('Note saved successfully')
+        }
+
+        function duplicateLastNote() {
+            if (notes.length === 0) return
+            
+            const last = {...notes[0]}
+            last.id = notes.length + 1
+            last.date = 'Oct 17'
+            last.time = '08:10'
+            last.subjective = last.subjective + ' (continued)'
+            
+            notes.unshift(last)
+            renderNotes()
+            
+            showToast('Yesterday\'s note duplicated')
+        }
+
+        function renderVitals() {
+            const grid = document.getElementById('vitals-grid')
+            if (!grid) return
+            
+            grid.innerHTML = ''
+            
+            // Headers
+            const headers = ['TIME', 'BP', 'HR', 'RR', 'SpO₂', 'TEMP']
+            headers.forEach(h => {
+                const cell = document.createElement('div')
+                cell.className = 'vital-cell font-medium text-xs text-zinc-500 py-2'
+                cell.textContent = h
+                grid.appendChild(cell)
+            })
+            
+            // Data rows
+            vitals.forEach(v => {
+                const timeslot = document.createElement('div')
+                timeslot.className = 'vital-cell text-sm font-medium'
+                timeslot.textContent = v.time
+                grid.appendChild(timeslot)
+                
+                const bpCell = document.createElement('div')
+                bpCell.className = 'vital-cell'
+                bpCell.textContent = v.bp
+                grid.appendChild(bpCell)
+                
+                const hrCell = document.createElement('div')
+                hrCell.className = 'vital-cell'
+                hrCell.textContent = v.hr
+                grid.appendChild(hrCell)
+                
+                const rrCell = document.createElement('div')
+                rrCell.className = 'vital-cell'
+                rrCell.textContent = v.rr
+                grid.appendChild(rrCell)
+                
+                const spoCell = document.createElement('div')
+                spoCell.className = 'vital-cell text-emerald-700'
+                spoCell.textContent = v.spo2
+                grid.appendChild(spoCell)
+                
+                const tempCell = document.createElement('div')
+                tempCell.className = 'vital-cell text-rose-600'
+                tempCell.textContent = v.temp
+                grid.appendChild(tempCell)
+            })
+        }
+
+        function addVitalEntry() {
+            const now = new Date()
+            const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
+            
+            const newVital = {
+                time: timeStr,
+                bp: '120/74',
+                hr: '74',
+                rr: '17',
+                spo2: '96',
+                temp: '98.6'
+            }
+            
+            vitals.unshift(newVital)
+            renderVitals()
+            
+            showToast('Vital signs recorded')
+        }
+
+        function renderMeds() {
+            const tbody = document.getElementById('meds-tbody')
+            if (!tbody) return
+            
+            tbody.innerHTML = ''
+            
+            medications.forEach(med => {
+                const tr = document.createElement('tr')
+                tr.className = 'border-b border-zinc-100 last:border-0 med-row'
+                
+                tr.innerHTML = `
+                    <td class="px-6 py-5">
+                        <div class="w-5 h-5 rounded border border-zinc-300"></div>
+                    </td>
+                    <td class="px-6 py-5 font-medium">${med.name}</td>
+                    <td class="px-6 py-5">${med.dose}</td>
+                    <td class="px-6 py-5">
+                        <div class="inline-block bg-zinc-100 px-2.5 py-px rounded text-xs">${med.route}</div>
+                    </td>
+                    <td class="px-6 py-5 text-sm">${med.frequency}</td>
+                    <td class="px-6 py-5 text-xs text-zinc-500">${med.start}</td>
+                    <td class="px-6 py-5">
+                        <div class="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div>EDIT</div>
+                            <div>STOP</div>
+                        </div>
+                    </td>
+                `
+                
+                tbody.appendChild(tr)
+            })
+        }
+
+        function showAddMedModal() {
+            document.getElementById('add-med-modal').classList.remove('hidden')
+            document.getElementById('add-med-modal').classList.add('flex')
+            
+            // Clear fields
+            document.getElementById('new-med-name').value = ''
+            document.getElementById('new-med-dose').value = ''
+        }
+
+        function closeAddMedModal() {
+            document.getElementById('add-med-modal').classList.add('hidden')
+            document.getElementById('add-med-modal').classList.remove('flex')
+        }
+
+        function addMedication() {
+            const name = document.getElementById('new-med-name').value || 'New Antibiotic'
+            const dose = document.getElementById('new-med-dose').value || '500 mg'
+            const route = document.getElementById('new-med-route').value
+            
+            const newMed = {
+                id: medications.length + 1,
+                name: name,
+                dose: dose,
+                route: route,
+                frequency: 'BD',
+                start: 'Oct 17'
+            }
+            
+            medications.push(newMed)
+            renderMeds()
+            closeAddMedModal()
+            
+            showToast('Medication added to MAR')
+        }
+
+        function markReceived() {
+            showToast('Investigation marked as received')
+        }
+
+        function editPatient() {
+            showToast('Opening patient master editor')
+        }
+
+        function showRoleModal() {
+            showToast('Role switching not available in demo')
+        }
+
+        function handleFabClick() {
+            if (currentModule === 'progress') {
+                addNewNote()
+            } else if (currentModule === 'vitals') {
+                addVitalEntry()
+            } else if (currentModule === 'meds') {
+                showAddMedModal()
+            } else {
+                showToast('Create new entry in this module')
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div')
+            toast.className = 'fixed bottom-24 left-1/2 -translate-x-1/2 bg-zinc-900 text-white text-sm px-8 py-3 rounded-2xl shadow-2xl flex items-center gap-3 z-50 no-print'
+            toast.innerHTML = `
+                ${message}
+                <div class="ml-2 w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping"></div>
+            `
+            
+            document.body.appendChild(toast)
+            
+            setTimeout(() => {
+                toast.style.transition = 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                toast.style.opacity = '0'
+                toast.style.transform = 'translate(-50%, 20px)'
+                
+                setTimeout(() => toast.remove(), 400)
+            }, 2200)
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.metaKey && e.key === 'p') {
+                e.preventDefault()
+                window.print()
+            }
+            
+            if (e.key === 'n' && e.ctrlKey) {
+                if (currentModule === 'progress') addNewNote()
+            }
+        })
+
+        // Initialize
+        window.onload = function() {
+            renderNotes()
+            renderVitals()
+            renderMeds()
+            
+            // Fake live update
+            setTimeout(() => {
+                if (vitals.length > 0) {
+                    vitals[0].spo2 = '94'
+                    renderVitals()
+                }
+            }, 3400)
+        }
+    </script>
+</body>
+</html>
+```
